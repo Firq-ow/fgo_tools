@@ -9,14 +9,6 @@ import json
 import data_config
 
 
-ATLAS_URL = "https://api.atlasacademy.io/export/NA/nice_servant.json"
-FILENAME_JSON = "nice_servant.json"
-ATLAS_URL_INFO = "https://api.atlasacademy.io/info"
-
-HASH = ""
-DATE = ""
-
-
 class HashError(Exception):
     """
     Exception if the Hash of the request and the cached Hash are equal.
@@ -29,54 +21,84 @@ class DateError(Exception):
     """
 
 
-def check_hash():
+class AtlasFunctions:
     """
-    Checks if the hashes are equal
-    :return: Result of checking hashes
+    Class to get and verify the data from AtlasAcademy
     """
-    global HASH
-    with urllib.request.urlopen(ATLAS_URL_INFO) as url:
-        HASH = json.loads(url.read().decode())["NA"]["hash"]
+    def __init__(self):
+        self._hash = ""
+        self._date = ""
+        self._atlasurl = "https://api.atlasacademy.io/export/NA/nice_servant.json"
+        self._jsonfilename = "nice_servant.json"
+        self._atlasurlinfo = "https://api.atlasacademy.io/info"
+        self._configfile = "data_config.py"
 
-    if str(HASH) == data_config.atlas_NA_hash:
-        return True
-    return False
+    def _check_hash(self):
+        """
+        Checks if the hashes are equal
+        :return: Result of checking hashes
+        """
 
+        with urllib.request.urlopen(self._atlasurlinfo) as url:
+            self._hash = json.loads(url.read().decode())["NA"]["hash"]
+        if str(self._hash) == data_config.atlas_na_hash:
+            return True
+        return False
 
-def check_date():
-    """
-    Checks if the dates are equal
-    :return:  Result of checking dates
-    """
-    global DATE
-    DATE = datetime.date.today().strftime("%Y.%m.%d")
+    def _check_date(self):
+        """
+        Checks if the dates are equal
+        :return:  Result of checking dates
+        """
+        self._date = datetime.date.today().strftime("%Y.%m.%d")
 
-    if DATE == data_config.atlas_NA_date:
-        return True
-    return False
+        if self._date == data_config.atlas_na_date:
+            return True
+        return False
 
+    def force_update(self):
+        """
+        Forces an data update
+        :param self:
+        :return: None
+        """
+        with urllib.request.urlopen(self._atlasurlinfo) as url:
+            self._hash = json.loads(url.read().decode())["NA"]["hash"]
+        self._date = datetime.date.today().strftime("%Y.%m.%d")
 
-def get_data():
-    """
-    gets data from atlas is hash and data are different or if the JSON doesn't exist
-    :return: None
-    """
-    checks = False
-
-    if not os.path.isfile(FILENAME_JSON):
-        checks = True
-    elif check_date():
-        raise DateError(f"The current date matches the date of the last request ({DATE}).")
-    elif check_hash():
-        raise HashError(f"The current hash matches the most recent hash ({HASH}).")
-    else:
-        checks = True
-
-    if checks:
-        with open(FILENAME_JSON, 'w') as outfile:
-            with urllib.request.urlopen(ATLAS_URL) as url:
+        with open(self._jsonfilename, 'w') as outfile:
+            with urllib.request.urlopen(self._atlasurl) as url:
                 data = json.loads(url.read().decode())
                 json.dump(data, outfile)
 
-        with open("data_config.py", "w") as configfile:
-            configfile.write(f'atlas_NA_hash = "{HASH}"\natlas_NA_date = "{DATE}"')
+        with open(self._configfile, "w") as configfile:
+            configfile.write(f'atlas_na_hash = "{self._hash}"\natlas_na_date = "{self._date}"\n')
+
+        print(f"Data has been forcefully updated to hash version {self._hash} on {self._date}")
+
+    def get_data(self):
+        """
+        gets data from atlas is hash and data are different or if the JSON doesn't exist
+        :return: None
+        """
+        checks = False
+
+        if not os.path.isfile(self._jsonfilename):
+            checks = True
+        elif self._check_date():
+            raise DateError(f"The current date matches the date of the last request ({self._date}).")
+        elif self._check_hash():
+            raise HashError(f"The current hash matches the most recent hash ({self._hash}).")
+        else:
+            checks = True
+
+        if checks:
+            with open(self._jsonfilename, 'w') as outfile:
+                with urllib.request.urlopen(self._atlasurl) as url:
+                    data = json.loads(url.read().decode())
+                    json.dump(data, outfile)
+
+            with open(self._configfile, "w") as configfile:
+                configfile.write(f'atlas_na_hash = "{self._hash}"\natlas_na_date = "{self._date}"\n')
+
+            print(f"Data has been updated to hash version {self._hash} on {self._date}")

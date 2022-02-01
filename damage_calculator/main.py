@@ -1,5 +1,8 @@
+"""
+main module
+"""
 from calc_dmg import CalculateDamage
-from get_atlas_json import get_data as update_atlas
+from get_atlas_json import AtlasFunctions
 from get_atlas_json import DateError, HashError
 
 # servantATK    = 'totalAttack'
@@ -18,17 +21,22 @@ from get_atlas_json import DateError, HashError
 
 
 def main():
+    """
+    main fuction
+    :return: None
+    """
+    atlas = AtlasFunctions()
     try:
-        update_atlas()
-    except (DateError, HashError) as e:
+        atlas.get_data()
+    except (DateError, HashError):
         print("Atlas Data was already up to date")
-        pass
 
-    in_str = "!dmg Shishou totalAttack15000 np5 cardmod50 special100 classmod1.05 cardmultiplier2 npmultiplier2400 classadvantage2 cardmod50"
-    c = CalculateDamage()
-    c.parse_values(in_str)
-    print(c.all_values)
-    dmg = c.calculate()
+    in_str = "!dmg Shishou totalAttack15000 np5 cardmod50 special100 " \
+             "classmod1.05 cardmultiplier2 npmultiplier2400 classadvantage2 cardmod50"
+    calc = CalculateDamage()
+    calc.parse_values(in_str)
+    print(calc.all_values)
+    dmg = calc.calculate()
     print(f"Norm: {dmg[0]}\nLow: {dmg[1]}\nHigh: {dmg[2]}")
 
 

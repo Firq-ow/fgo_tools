@@ -1,2 +1,2 @@
-atlas_NA_hash = "51b34e"
-atlas_NA_date = "2022.01.31"
+atlas_na_hash = "4c97de"
+atlas_na_date = "2022.02.01"
