@@ -25,13 +25,17 @@ class AtlasFunctions:
     """
     Class to get and verify the data from AtlasAcademy
     """
-    def __init__(self):
+    def __init__(self,
+                 filename="nice_servant.json",
+                 url="https://api.atlasacademy.io/export/NA/nice_servant.json",
+                 info_url="https://api.atlasacademy.io/info",
+                 config="data_config.py", ):
         self._hash = ""
         self._date = ""
-        self._atlasurl = "https://api.atlasacademy.io/export/NA/nice_servant.json"
-        self._jsonfilename = "nice_servant.json"
-        self._atlasurlinfo = "https://api.atlasacademy.io/info"
-        self._configfile = "data_config.py"
+        self._atlasurl = url
+        self._jsonfilename = filename
+        self._atlasurlinfo = info_url
+        self._configfile = config
 
     def _check_hash(self):
         """
