@@ -11,6 +11,9 @@ layout_main = [
     ],
     [
         psg.In(size=(25, 1), enable_events=False, key="-DMG_Input-")
+    ],
+    [
+        psg.Button(key="-Calculate-",button_text="Calculate")
     ]
 ]
 
@@ -23,6 +26,10 @@ main = psg.Window(title="Damage Calculator Window",
 while True:
     # Read Events
     event, values = main.read()
+
+    if event == "-Calculate-":
+        formular = values["-DMG_Input-"]
+
 
     # Close Application if window is closed
     if event == psg.WINDOW_CLOSED:
