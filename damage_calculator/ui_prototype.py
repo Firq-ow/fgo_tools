@@ -4,12 +4,19 @@ UI for damage Calculator
 import json
 import re
 from slugify import slugify
+import requests
 
 import PySimpleGUI as psg
 from calc_dmg import CalculateDamage
 from get_atlas_json import AtlasFunctions
 from get_atlas_json import DateError, HashError
 
+
+def get_web_image(img_url : str):
+    url = img_url
+    response = requests.get(url, stream=True)
+    response.raw.decode_content = True
+    return response.raw.read()
 
 # Layout of main windows
 layout_main = [
@@ -21,14 +28,19 @@ layout_main = [
                  key="-Servant_Input_BT-")
     ],
     [
-        psg.Text(key="-Sout-")
+        psg.Listbox(values=[],
+                    enable_events=True,
+                    size=(40, 10),
+                    key="-Servants_Listbox-"),
+        psg.Image(key="-IMAGE_SERVANT-")
     ],
     [
         psg.Text("Enter Damage formular here:")
     ],
     [
         psg.In(enable_events=False,
-               key="-DMG_Input-"
+               key="-DMG_Input-",
+               size=42
                )
     ],
     [
@@ -47,6 +59,11 @@ main = psg.Window(title="Damage Calculator Window",
                   margins=(100, 50)
                   )
 
+with open('nice_servant.json') as f:
+    _DATA = json.load(f)
+
+_CURRENT_KEYVALS = []
+
 # Event Loop
 while True:
     # Read Events
@@ -55,32 +72,54 @@ while True:
     if event == "-Servant_Input_BT-":
         name = values["-Servant_Input-"]
         pattern = re.compile("^[0-9]*$")
-        SERVANT_NAMES = ''
-
-        with open('nice_servant.json') as f:
-            data = json.load(f)
+        SERVANT_NAMES = []
+        matches = ["best girl", "waifu"]
 
         if pattern.match(name):
-            for keyval in data:
+            _CURRENT_KEYVALS = []
+            for keyval in _DATA:
                 if keyval['collectionNo'] == int(name):
-                    SERVANT_NAMES = [keyval['name'], keyval['className'], keyval['id']]
-                    print(keyval)
+                    _CURRENT_KEYVALS.append(keyval)
+                    servant_name = [f"[{keyval['collectionNo']}] - {keyval['name']}, Class: {keyval['className'].capitalize()}"]
+                    SERVANT_NAMES = servant_name
+        elif any(x in name for x in matches):
+            for keyval in _DATA:
+                if keyval['collectionNo'] == 70:
+                    _CURRENT_KEYVALS.append(keyval)
+                    servant_name = [f"[{keyval['collectionNo']}] - {keyval['name']}, Class: {keyval['className'].capitalize()}"]
+                    SERVANT_NAMES = servant_name
         else:
-            names = []
-            for keyval in data:
-                serv_id = []
+            _CURRENT_KEYVALS = []
+            servant_name = []
+            for keyval in _DATA:
                 keyval_slug = slugify(keyval['name'])
                 name_slug = slugify(name)
                 if name_slug in keyval_slug:
-                    names.append([keyval['name'], keyval['className'], keyval['id']])
-                    print(names)
+                    _CURRENT_KEYVALS.append(keyval)
+                    servant_name.append(f"[{keyval['collectionNo']}] - {keyval['name']}, Class: {keyval['className'].capitalize()}")
+            SERVANT_NAMES = servant_name
 
-            if len(names) > 0:
-                print(names)
-                for x in names:
-                    SERVANT_NAMES += f"{''.join(str(x))}\n"
+        if len(SERVANT_NAMES) == 0:
+            SERVANT_NAMES = ["No Servant found."]
+            main["-IMAGE_SERVANT-"].update()
 
-        main["-Sout-"].update(f"{SERVANT_NAMES}")
+        main["-Servants_Listbox-"].update(SERVANT_NAMES)
+
+    if event == "-Servants_Listbox-":
+        value = values["-Servants_Listbox-"][0]
+        if value != "No Servant found.":
+            id = int(re.findall(r'\[(.*?)\]', value)[0])
+            json_keyvals = json.dumps(_CURRENT_KEYVALS)
+            data = json.loads(json_keyvals)
+            for keyval in data:
+                if keyval['collectionNo'] == id:
+                    img_url = keyval['extraAssets']['faces']['ascension']['1']
+
+            img_data = get_web_image(img_url)
+
+            main["-IMAGE_SERVANT-"].update(data=img_data)
+        else:
+            main["-IMAGE_SERVANT-"].update()
 
     if event == "-Calculate-":
         formular = values["-DMG_Input-"]
