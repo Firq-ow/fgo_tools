@@ -13,8 +13,7 @@ layout_main = [
         psg.Text("Enter Damage formular here:")
     ],
     [
-        psg.In(size=(25, 1),
-               enable_events=False,
+        psg.In(enable_events=False,
                key="-DMG_Input-"
                )
     ],
@@ -31,6 +30,7 @@ layout_main = [
 # Create Application window
 main = psg.Window(title="Damage Calculator Window",
                   layout=layout_main,
+                  margins=(100, 50)
                   )
 
 # Event Loop
