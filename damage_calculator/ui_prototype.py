@@ -71,14 +71,14 @@ while True:
 
     if event == "-Servant_Input_BT-":
         name = values["-Servant_Input-"]
-        pattern = re.compile("^[0-9]*$")
+        pattern = re.compile("^[0-9]+$")
         SERVANT_NAMES = []
         matches = ["best girl", "waifu"]
 
         if pattern.match(name):
             _CURRENT_KEYVALS = []
             for keyval in _DATA:
-                if keyval['collectionNo'] == int(name):
+                if keyval['collectionNo'] == int(name) and not "beast" in keyval['className']:
                     _CURRENT_KEYVALS.append(keyval)
                     servant_name = [f"[{keyval['collectionNo']}] - {keyval['name']}, Class: {keyval['className'].capitalize()}"]
                     SERVANT_NAMES = servant_name
@@ -94,15 +94,15 @@ while True:
             for keyval in _DATA:
                 keyval_slug = slugify(keyval['name'])
                 name_slug = slugify(name)
-                if name_slug in keyval_slug:
+                if name_slug in keyval_slug and not any(x in keyval['className'] for x in ["beast", "grandCaster"]) and not keyval_slug == slugify("Solomon"):
                     _CURRENT_KEYVALS.append(keyval)
                     servant_name.append(f"[{keyval['collectionNo']}] - {keyval['name']}, Class: {keyval['className'].capitalize()}")
             SERVANT_NAMES = servant_name
 
         if len(SERVANT_NAMES) == 0:
             SERVANT_NAMES = ["No Servant found."]
-            main["-IMAGE_SERVANT-"].update()
 
+        main["-IMAGE_SERVANT-"].update()
         main["-Servants_Listbox-"].update(SERVANT_NAMES)
 
     if event == "-Servants_Listbox-":
