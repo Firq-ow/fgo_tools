@@ -8,164 +8,193 @@ import requests
 
 import PySimpleGUI as psg
 from calc_dmg import CalculateDamage
-from get_atlas_json import AtlasFunctions
-from get_atlas_json import DateError, HashError
 
 
-def get_web_image(img_url : str):
-    url = img_url
-    response = requests.get(url, stream=True)
-    response.raw.decode_content = True
-    return response.raw.read()
+# from get_atlas_json import AtlasFunctions
+# from get_atlas_json import DateError, HashError
 
-# Setting theme and Font
-psg.theme("DarkBlue3")
-psg.set_options(font=("Courier New", 12))
-
-# Search layout
-layout_searchinput = [
-    [
-        psg.Text("Enter Servant Name or ID:")
-    ],
-    [
-        psg.In(enable_events=False,
-               key="-Servant_Input-"),
-        psg.Button(button_text="Submit",
-                   key="-Servant_Input_BT-")
-    ],
-    [
-        psg.Listbox(values=[],
-                    enable_events=True,
-                    size=(52, 10),
-                    key="-Servants_Listbox-")
-    ]
-]
-
-# Data Output Layout
-layout_dataoutput = [
-    [
-        psg.Image(key="-IMAGE_SERVANT-")
-    ],
-    [
-        psg.Text(key="-ServantInfoText-")
-    ]
-]
+def main():
+    mainUi = UI()
+    mainUi.eventLoop()
 
 
-# Layout of main windows
-layout_main = [
-    layout_searchinput,
-    layout_dataoutput,
-    [
-        psg.Text("Enter Damage formular here:")
-    ],
-    [
-        psg.In(enable_events=False,
-               key="-DMG_Input-",
-               size=42
-               )
-    ],
-    [
-        psg.Button(key="-Calculate-",
-                   button_text="Calculate"
-                   )
-    ],
-    [
-        psg.Text(key="-Tout-")
-    ]
-]
+class UI:
+    def __init__(self):
+        # Load Atlas JSON
+        with open('nice_servant.json') as json_file:
+            self._DATA = json.load(json_file)
 
-# Create Application window
-main = psg.Window(title="Damage Calculator Window",
-                  layout=layout_main,
-                  margins=(100, 50),
-                  finalize=True
-                  )
+        # Set class vars
+        self._CURRENT_KEYVALUES = []
 
-# Pressing Enter event
-main['-Servant_Input-'].bind("<Return>", "_Enter")
-main['-DMG_Input-'].bind("<Return>", "_Enter")
+        # Set PySimpleGui Standards
+        psg.theme("DarkBlue3")
+        psg.set_options(font=("Courier New", 12))
 
-with open('nice_servant.json') as f:
-    _DATA = json.load(f)
+        # Set layouts
+        # Search layout
+        layout_searchinput = [
+            [
+                psg.Text("Enter Servant Name or ID:")
+            ],
+            [
+                psg.In(enable_events=False,
+                       key="-Servant_Input-"),
+                psg.Button(button_text="Submit",
+                           key="-Servant_Input_BT-")
+            ],
+            [
+                psg.Listbox(values=[],
+                            enable_events=True,
+                            size=(52, 10),
+                            key="-Servants_Listbox-")
+            ]
+        ]
 
-_CURRENT_KEYVALS = []
+        # Data Output Layout
+        layout_dataoutput = [
+            [
+                psg.Image(key="-IMAGE_SERVANT-")
+            ],
+            [
+                psg.Text(key="-ServantInfoText-")
+            ]
+        ]
 
-# Event Loop
-while True:
-    # Read Events
-    event, values = main.read()
+        # Layout of main windows
+        layout_main = [
+            layout_searchinput,
+            layout_dataoutput,
+            [
+                psg.Text("Enter Damage formular here:")
+            ],
+            [
+                psg.In(enable_events=False,
+                       key="-DMG_Input-",
+                       size=42
+                       )
+            ],
+            [
+                psg.Button(key="-Calculate-",
+                           button_text="Calculate"
+                           )
+            ],
+            [
+                psg.Text(key="-Tout-")
+            ]
+        ]
 
-    if event == "-Servant_Input_BT-" or event == "-Servant_Input-" + "_Enter":
-        name = values["-Servant_Input-"]
-        pattern = re.compile("^[0-9]+$")
-        SERVANT_NAMES = []
-        matches = ["best girl", "waifu"]
+        self.mainWindow = psg.Window(title="Damage Calculator Window",
+                                     layout=layout_main,
+                                     margins=(100, 50),
+                                     finalize=True
+                                     )
 
-        if pattern.match(name):
-            _CURRENT_KEYVALS = []
-            for keyval in _DATA:
-                if keyval['collectionNo'] == int(name) and not "beast" in keyval['className']:
-                    _CURRENT_KEYVALS.append(keyval)
-                    servant_name = [f"[{keyval['collectionNo']}] - {keyval['name']}, Class: {keyval['className'].capitalize()}"]
-                    SERVANT_NAMES = servant_name
-        elif any(x in name for x in matches):
-            for keyval in _DATA:
-                if keyval['collectionNo'] == 70:
-                    _CURRENT_KEYVALS.append(keyval)
-                    servant_name = [f"[{keyval['collectionNo']}] - {keyval['name']}, Class: {keyval['className'].capitalize()}"]
-                    SERVANT_NAMES = servant_name
-        else:
-            _CURRENT_KEYVALS = []
-            servant_name = []
-            for keyval in _DATA:
-                keyval_slug = slugify(keyval['name'])
-                name_slug = slugify(name)
-                if name_slug in keyval_slug and not any(x in keyval['className'] for x in ["beast", "grandCaster"]) and not keyval_slug == slugify("Solomon"):
-                    _CURRENT_KEYVALS.append(keyval)
-                    servant_name.append(f"[{keyval['collectionNo']}] - {keyval['name']}, Class: {keyval['className'].capitalize()}")
-            SERVANT_NAMES = servant_name
+        # Bind Enter Events
+        self.mainWindow['-Servant_Input-'].bind("<Return>", "_Enter")
+        self.mainWindow['-DMG_Input-'].bind("<Return>", "_Enter")
 
-        if len(SERVANT_NAMES) == 0:
-            SERVANT_NAMES = ["No Servant found."]
+    @staticmethod
+    def get_web_image(img_url: str):
+        url = img_url
+        response = requests.get(url, stream=True)
+        response.raw.decode_content = True
+        return response.raw.read()
 
-        main["-IMAGE_SERVANT-"].update()
-        main["-Servants_Listbox-"].update(SERVANT_NAMES)
+    def eventLoop(self):
+        while True:
+            event, values = self.mainWindow.read()
 
-    if event == "-Servants_Listbox-":
-        value = values["-Servants_Listbox-"][0]
-        if value != "No Servant found.":
-            id = int(re.findall(r'\[(.*?)\]', value)[0])
-            json_keyvals = json.dumps(_CURRENT_KEYVALS)
-            data = json.loads(json_keyvals)
-            hit_keyval = []
-            for keyval in data:
-                if keyval['collectionNo'] == id:
-                    hit_keyval =keyval
+            match event:
+                case "-Servant_Input_BT-" | "-Servant_Input-_Enter":
+                    servant_list = self.search_servant(values["-Servant_Input-"])
+                    self.mainWindow["-IMAGE_SERVANT-"].update()
+                    self.mainWindow["-Servants_Listbox-"].update(servant_list)
+                case "-Servants_Listbox-":
+                    value = values["-Servants_Listbox-"][0]
+                    self.update_output_servant(value)
+                case "-Calculate-" | "-DMG_Input-_Enter":
+                    self.calculate_dmg(values["-DMG_Input-"])
+                case psg.WINDOW_CLOSED:
+                    self.mainWindow.close()
+                    break
 
-            img_url = hit_keyval['extraAssets']['faces']['ascension']['1']
-            name_servant = hit_keyval['name']
-            img_data = get_web_image(img_url)
+    def calculate_dmg(self, formular):
+        calculator = CalculateDamage()
 
-            main["-IMAGE_SERVANT-"].update(data=img_data)
-            main["-ServantInfoText-"].update(f"{name_servant}")
-        else:
-            main["-IMAGE_SERVANT-"].update()
-            main["-ServantInfoText-"].update("")
-
-    if event == "-Calculate-" or event == "-DMG_Input-" + "_Enter":
-        formular = values["-DMG_Input-"]
-        calc = CalculateDamage()
         try:
-            calc.parse_values(formular)
+            calculator.parse_values(formular)
         except (ValueError, NameError):
             print("Could not parse input string")
 
-        dmg = calc.calculate()
+        dmg = calculator.calculate()
 
-        main["-Tout-"].update(f"Calculated Damage:\nAvg: {dmg[0]}\nMin: {dmg[1]}\nMax: {dmg[2]}")
+        self.mainWindow["-Tout-"].update(f"Calculated Damage:\nAvg: {dmg[0]}\nMin: {dmg[1]}\nMax: {dmg[2]}")
 
-    # Close Application if window is closed
-    if event == psg.WINDOW_CLOSED:
-        main.close()
-        break
+    def update_output_servant(self, value):
+        if value == "No Servant found.":
+            self.mainWindow["-IMAGE_SERVANT-"].update()
+            self.mainWindow["-ServantInfoText-"].update("")
+            return
+
+        listbox_id = int(re.findall(r'\[(.*?)]', value)[0])
+        listbox_data = json.loads(json.dumps(self._CURRENT_KEYVALUES))
+        result_key_value = []
+
+        for key_value in listbox_data:
+            if key_value['collectionNo'] == listbox_id:
+                result_key_value = key_value
+
+        image_url = result_key_value['extraAssets']['faces']['ascension']['1']
+        servant_name = result_key_value['name']
+
+        image_data = self.get_web_image(image_url)
+
+        self.mainWindow["-IMAGE_SERVANT-"].update(data=image_data)
+        self.mainWindow["-ServantInfoText-"].update(f"{servant_name}")
+
+    def search_servant(self, name):
+        id_pattern = re.compile("^[0-9]+$")
+        matches = ["best girl", "waifu"]
+
+        if id_pattern.match(name):
+            return self.find_servant_by_id(int(name))
+
+        if any(x in name for x in matches):
+            return self.find_servant_by_id(70)
+
+        return self.find_servant_by_name(name)
+
+    def find_servant_by_id(self, servant_id):
+        self._CURRENT_KEYVALUES = []
+
+        for key_value in self._DATA:
+            if key_value['collectionNo'] == int(servant_id) and "beast" not in key_value['className']:
+                self._CURRENT_KEYVALUES.append(key_value)
+                return [
+                    f"[{key_value['collectionNo']}] - {key_value['name']}, Class: {key_value['className'].capitalize()}"]
+
+        return ["No Servant found."]
+
+    def find_servant_by_name(self, name):
+        self._CURRENT_KEYVALUES = []
+
+        servant_list = []
+        for key_value in self._DATA:
+            key_value_slug = slugify(key_value['name'])
+            name_slug = slugify(name)
+            if name_slug in key_value_slug and not any(
+                    x in key_value['className'] for x in ["beast", "grandCaster"]) and not key_value_slug == slugify(
+                    "Solomon"):
+                self._CURRENT_KEYVALUES.append(key_value)
+                servant_list.append(
+                    f"[{key_value['collectionNo']}] - {key_value['name']}, Class: {key_value['className'].capitalize()}")
+
+        if len(servant_list) == 0:
+            return ["No Servant found."]
+
+        return servant_list
+
+
+if __name__ == '__main__':
+    main()
