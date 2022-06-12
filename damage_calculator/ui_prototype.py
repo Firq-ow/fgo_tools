@@ -14,12 +14,29 @@ from calc_dmg import CalculateDamage
 # from get_atlas_json import DateError, HashError
 
 def main():
-    mainUi = UI()
-    mainUi.eventLoop()
+    """
+    Main function
+    :return: None
+    """
+    main_ui = UI()
+    main_ui.event_loop()
 
 
 class UI:
+    """
+    Class that houses the UI
+
+    Call UI.eventLoop() to start UI event handling, otherwise it will be instantly closed
+    """
     def __init__(self):
+        """
+        Init function:
+        - creates JSON data constant
+        - creates storage for current list elements
+        - stes main window layout and design
+        - creates main window
+        - binds enter to specific text fields
+        """
         # Load Atlas JSON
         with open('nice_servant.json') as json_file:
             self._DATA = json.load(json_file)
@@ -84,42 +101,58 @@ class UI:
             ]
         ]
 
-        self.mainWindow = psg.Window(title="Damage Calculator Window",
-                                     layout=layout_main,
-                                     margins=(100, 50),
-                                     finalize=True
-                                     )
+        self.main_window = psg.Window(title="Damage Calculator Window",
+                                      layout=layout_main,
+                                      margins=(100, 50),
+                                      finalize=True
+                                      )
 
         # Bind Enter Events
-        self.mainWindow['-Servant_Input-'].bind("<Return>", "_Enter")
-        self.mainWindow['-DMG_Input-'].bind("<Return>", "_Enter")
+        self.main_window['-Servant_Input-'].bind("<Return>", "_Enter")
+        self.main_window['-DMG_Input-'].bind("<Return>", "_Enter")
 
     @staticmethod
     def get_web_image(img_url: str):
+        """
+        Gets an image from a given URL
+        :param img_url: url of the image
+        :return: data of the image as raw data
+        """
         url = img_url
         response = requests.get(url, stream=True)
         response.raw.decode_content = True
         return response.raw.read()
 
-    def eventLoop(self):
+    def event_loop(self):
+        """
+        Main event loop, has to be called to handle all UI events
+        :return: Nothing
+        """
         while True:
-            event, values = self.mainWindow.read()
+            event, values = self.main_window.read()
 
             match event:
                 case "-Servant_Input_BT-" | "-Servant_Input-_Enter":
                     servant_list = self.search_servant(values["-Servant_Input-"])
-                    self.mainWindow["-IMAGE_SERVANT-"].update()
-                    self.mainWindow["-Servants_Listbox-"].update(servant_list)
+                    self.main_window["-IMAGE_SERVANT-"].update()
+                    self.main_window["-Servants_Listbox-"].update(servant_list)
                 case "-Servants_Listbox-":
                     value = values["-Servants_Listbox-"][0]
                     self.update_output_servant(value)
                 case "-Calculate-" | "-DMG_Input-_Enter":
-                    self.calculate_dmg(values["-DMG_Input-"])
+                    damage = self.calculate_dmg(values["-DMG_Input-"])
+                    self.main_window["-Tout-"].update(f"Calculated Damage:\nAvg: {damage[0]}\nMin: {damage[1]}\nMax: {damage[2]}")
                 case psg.WINDOW_CLOSED:
-                    self.mainWindow.close()
+                    self.main_window.close()
                     break
 
-    def calculate_dmg(self, formular):
+    @staticmethod
+    def calculate_dmg(formular):
+        """
+        Function to initiate the damage calculation
+        :param formular: Damage formular
+        :return: Nothing
+        """
         calculator = CalculateDamage()
 
         try:
@@ -127,14 +160,18 @@ class UI:
         except (ValueError, NameError):
             print("Could not parse input string")
 
-        dmg = calculator.calculate()
+        return calculator.calculate()
 
-        self.mainWindow["-Tout-"].update(f"Calculated Damage:\nAvg: {dmg[0]}\nMin: {dmg[1]}\nMax: {dmg[2]}")
 
     def update_output_servant(self, value):
+        """
+        Updates the Image and name of the currently selected servant
+        :param value: String returned by the ListBox event
+        :return: Nothing
+        """
         if value == "No Servant found.":
-            self.mainWindow["-IMAGE_SERVANT-"].update()
-            self.mainWindow["-ServantInfoText-"].update("")
+            self.main_window["-IMAGE_SERVANT-"].update()
+            self.main_window["-ServantInfoText-"].update("")
             return
 
         listbox_id = int(re.findall(r'\[(.*?)]', value)[0])
@@ -150,10 +187,15 @@ class UI:
 
         image_data = self.get_web_image(image_url)
 
-        self.mainWindow["-IMAGE_SERVANT-"].update(data=image_data)
-        self.mainWindow["-ServantInfoText-"].update(f"{servant_name}")
+        self.main_window["-IMAGE_SERVANT-"].update(data=image_data)
+        self.main_window["-ServantInfoText-"].update(f"{servant_name}")
 
     def search_servant(self, name):
+        """
+        Selects the appropriate searching method for a given servant name or id
+        :param name: Input from Listbox
+        :return: Formatted List of servant strings
+        """
         id_pattern = re.compile("^[0-9]+$")
         matches = ["best girl", "waifu"]
 
@@ -166,6 +208,11 @@ class UI:
         return self.find_servant_by_name(name)
 
     def find_servant_by_id(self, servant_id):
+        """
+        Searches a given servant by ID
+        :param servant_id: ID of the servant
+        :return: List with formatted servant data
+        """
         self._CURRENT_KEYVALUES = []
 
         for key_value in self._DATA:
@@ -177,6 +224,11 @@ class UI:
         return ["No Servant found."]
 
     def find_servant_by_name(self, name):
+        """
+        Searches a given servant by Name
+        :param name: Name (or name fragment) of servant
+        :return: List with formatted servant data
+        """
         self._CURRENT_KEYVALUES = []
 
         servant_list = []

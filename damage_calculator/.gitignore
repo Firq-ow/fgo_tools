@@ -3,3 +3,4 @@ venv/
 .idea/
 nice_servant.json
 data_config.py
+.pylintrc
