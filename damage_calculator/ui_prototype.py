@@ -18,22 +18,38 @@ def get_web_image(img_url : str):
     response.raw.decode_content = True
     return response.raw.read()
 
-# Layout of main windows
-layout_main = [
+layout_searchinput = [
     [
-      psg.Text("Enter Servant Name or ID:"),
-      psg.In(enable_events=False,
-             key="-Servant_Input-"),
-      psg.Button(button_text="Submit",
-                 key="-Servant_Input_BT-")
+        psg.Text("Enter Servant Name or ID:")
+    ],
+    [
+        psg.In(enable_events=False,
+               key="-Servant_Input-"),
+        psg.Button(button_text="Submit",
+                   key="-Servant_Input_BT-")
     ],
     [
         psg.Listbox(values=[],
                     enable_events=True,
-                    size=(40, 10),
-                    key="-Servants_Listbox-"),
+                    size=(52, 10),
+                    key="-Servants_Listbox-")
+    ]
+]
+
+layout_dataoutput = [
+    [
         psg.Image(key="-IMAGE_SERVANT-")
     ],
+    [
+        psg.Text(key="-ServantInfoText-")
+    ]
+]
+
+
+# Layout of main windows
+layout_main = [
+    layout_searchinput,
+    layout_dataoutput,
     [
         psg.Text("Enter Damage formular here:")
     ],
@@ -111,15 +127,20 @@ while True:
             id = int(re.findall(r'\[(.*?)\]', value)[0])
             json_keyvals = json.dumps(_CURRENT_KEYVALS)
             data = json.loads(json_keyvals)
+            hit_keyval = []
             for keyval in data:
                 if keyval['collectionNo'] == id:
-                    img_url = keyval['extraAssets']['faces']['ascension']['1']
+                    hit_keyval =keyval
 
+            img_url = hit_keyval['extraAssets']['faces']['ascension']['1']
+            name_servant = hit_keyval['name']
             img_data = get_web_image(img_url)
 
             main["-IMAGE_SERVANT-"].update(data=img_data)
+            main["-ServantInfoText-"].update(f"{name_servant}")
         else:
             main["-IMAGE_SERVANT-"].update()
+            main["-ServantInfoText-"].update("")
 
     if event == "-Calculate-":
         formular = values["-DMG_Input-"]
