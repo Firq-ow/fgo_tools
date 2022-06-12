@@ -18,6 +18,11 @@ def get_web_image(img_url : str):
     response.raw.decode_content = True
     return response.raw.read()
 
+# Setting theme and Font
+psg.theme("DarkBlue3")
+psg.set_options(font=("Courier New", 12))
+
+# Search layout
 layout_searchinput = [
     [
         psg.Text("Enter Servant Name or ID:")
@@ -36,6 +41,7 @@ layout_searchinput = [
     ]
 ]
 
+# Data Output Layout
 layout_dataoutput = [
     [
         psg.Image(key="-IMAGE_SERVANT-")
@@ -72,8 +78,12 @@ layout_main = [
 # Create Application window
 main = psg.Window(title="Damage Calculator Window",
                   layout=layout_main,
-                  margins=(100, 50)
+                  margins=(100, 50),
+                  finalize=True
                   )
+
+# Pressing Enter event
+main['-Servant_Input-'].bind("<Return>", "_Enter")
 
 with open('nice_servant.json') as f:
     _DATA = json.load(f)
@@ -85,7 +95,7 @@ while True:
     # Read Events
     event, values = main.read()
 
-    if event == "-Servant_Input_BT-":
+    if event == "-Servant_Input_BT-" or event == "-Servant_Input-" + "_Enter":
         name = values["-Servant_Input-"]
         pattern = re.compile("^[0-9]+$")
         SERVANT_NAMES = []
