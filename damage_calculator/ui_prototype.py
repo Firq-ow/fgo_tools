@@ -84,6 +84,7 @@ main = psg.Window(title="Damage Calculator Window",
 
 # Pressing Enter event
 main['-Servant_Input-'].bind("<Return>", "_Enter")
+main['-DMG_Input-'].bind("<Return>", "_Enter")
 
 with open('nice_servant.json') as f:
     _DATA = json.load(f)
@@ -152,7 +153,7 @@ while True:
             main["-IMAGE_SERVANT-"].update()
             main["-ServantInfoText-"].update("")
 
-    if event == "-Calculate-":
+    if event == "-Calculate-" or event == "-DMG_Input-" + "_Enter":
         formular = values["-DMG_Input-"]
         calc = CalculateDamage()
         try:
